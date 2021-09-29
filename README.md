@@ -1,26 +1,7 @@
-Template de dépôt Git pour projet d'étudiant
+Behind Food - Amélioration de l'application mobile sur la face cachée des aliments industriels
 ============================================
 
 NOTE: [ENGLISH VERSION HERE](README-en.md)
-
-Ceci est un exemple de dépôt Git pratique qui peut être utilisé pour tout projet de semestre, projet de stage ou travail de Bachelor/Master. Il contient l'architecture de base suivante :
-
-- un dossier `docs/` qui contiendra tous les documents utiles au projet (PVs des séances hebdomadaires, cahier des charges, présentation intermédiaire et finale, planning, rapport, etc.)
-- un dossier `code/` qui contiendra, comme son nom l'indique, le code. Il contient déjà deux fichiers :
-	- `.gitignore` : pour y mettre tous les fichiers qui devront être ignorés par Git (fichiers de config, mots de passe, config d'IDE, librairies etc.). Il sera différent en fonction du langage/framework utilisé.
-	- `README.md` : devra contenir les explications pour lancer le projet (dépendances, manipulations à faire, installation, lancement)
-
-Pour l'utiliser, téléchargez simplement ce dépôt et faites-en un dépôt Git relatif à votre projet.
-
-Vous pouvez tout à fait améliorer ce template en créant une [Merge Request](https://gitlab.forge.hefr.ch/jacky.casas/student-project-template/merge_requests) ou proposer des améliorations dans les [Issues](https://gitlab.forge.hefr.ch/jacky.casas/student-project-template/issues).
-
-Ce README contient les informations générales du projet à remplir. Supprimez donc tout ce qui se trouve au-dessus de la ligne ci-dessous.
-
-PS : Le formatage des fichiers README se fait en Markdown, plus d'infos [ici](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet).
-
-PS2 : Si vous utilisez ce template, n'hésitez pas à lui mettre une étoile, il gagnera en visibilité dans les dépôts publics de l'école.
-
---------------------------------------------------------------------------
 
 Onboarding
 ==========
@@ -75,30 +56,22 @@ Voici une check-list pour être sûr d'avoir tout déposé sur Gitlab avant la f
 
 
 --------------------------------------------------------------------------
-Nom du projet
+Behind Food
 =============
 
 Infos générales
 ---------------
 
-- **Etudiant/stagiaire** : mon nom - mon-email@hefr.ch
-- **Superviseur** : [Jacky Casas](https://gitlab.forge.hefr.ch/jacky.casas) - jacky.casas@hefr.ch
-- **Professeur** : [Elena Mugellini](https://gitlab.forge.hefr.ch/elena.mugellini) - elena.mugellini@hefr.ch
-- **Professeur** : [Omar Abou Khaled](https://gitlab.forge.hefr.ch/omar.aboukhaled) - omar.aboukhaled@hefr.ch
-- **Dates** : du 01.07.2020 au 31.08.2020
-
-
-Contexte
---------
-
-Ce projet de xxx a été développé durant un stage effectué chez yyy en août 2017 ...
-
+- **Etudiant** : Grégory Geinoz - gregory.geinoz@edu.hefr.ch
+- **Superviseur** : [Pascal Bruegger](https://gitlab.forge.hefr.ch/pascal.bruegger) - pascal.bruegger@hefr.ch
+- **Mandant** : [Samuel Fringeli](https://gitlab.forge.hefr.ch/samuel.fringeli) - samuel.fringeli@hefr.ch
+- **Dates** : du 27.09.2021 au 09.02.2022
 
 Description
 -----------
 
-Le but de ce projet est de développer un ...
-
+Behind food est une application mobile utilisée dans le cadre d’une exposition sur le développement durable. Elle permet aux visiteurs d’explorer les faces cachées de différents aliments du quotidien au moyen d’un parcours de divers thèmes reliés à ces aliments. Ce parcours donne accès à des images, à des vidéos et à des textes pour illustrer les caractéristiques des aliments concernés. Ces éléments sont mis à jour par l’équipe qui gère l’exposition, au moyen d’une interface backend, et sont accessibles depuis l’application grâce à une API.
+Dans la version actuelle de l’application, c’est une webview qui est chargée et qui affiche les images et vidéos au fur et à mesure du parcours de l’utilisateur dans la structure, mais les médias ne sont pas sauvegardés dans le stockage local de l’application, ce qui rend impossible l’utilisation de celle-ci hors ligne. Comme l’exposition a pour objectif de fonctionner entièrement hors ligne, il serait nécessaire de faire en sorte que les données affichées soient téléchargées localement, avec un système permettant d’actualiser les dernières modifications effectuées sur le backend par l’utilisateur de l’application.
 
 Contenu
 -------

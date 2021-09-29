@@ -1,26 +1,7 @@
-Git repo template for student project
+Behind Food - Amélioration de l'application mobile sur la face cachée des aliments industriels
 =====================================
 
 NOTE: [VERSION FRANCAISE ICI](README.md)
-
-This is a template that you can use for any semester project, internship project or Bachelor/Master thesis. It contains the following files:
-
-- a `docs/` folder that will contain useful project documents (weekly meeting minutes, specifications, presentations slides, planning, report and so on.)
-- a `code/` folder that will contain your code. Two files are already there:
-	- `.gitignore` : list all the files that you want Git to ignore (config files, passwords, IDEs configs, libraries, and so on.). Its content will vary depending on the language/technologies you use.
-	- `README.md` : explain how to use the code (prerequisites, dependencies, things to do to install and run the software)
-
-To use it, just download this repository and create a new Git repo for your project.
-
-If you want to improve this template, just create a [Merge Request](https://gitlab.forge.hefr.ch/jacky.casas/student-project-template/merge_requests) or suggest improvements by opening an [Issue](https://gitlab.forge.hefr.ch/jacky.casas/student-project-template/issues).
-
-This README contains the general information about your project (that you have to fill). Delete all that is above the dotted line here below.
-
-PS: README files formatting is done in [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet).
-
-PS2: If you use this template, please give it a star (on top of the page). It'll gain visibility among the public repos of HEIA-FR.
-
---------------------------------------------------------------------------
 
 Onboarding
 ==========
@@ -75,30 +56,22 @@ Here is a checklist to make sure you have everything pushed on Gitlab before the
 - [ ] I organized a departure apero (optional, depends on your supervisor);)
 
 --------------------------------------------------------------------------
-Project name
+Behind Food
 ============
 
 General information
 -------------------
 
-- **Student/Intern**: my name - my-email@hefr.ch
-- **Supervisor**:  [Jacky Casas](https://gitlab.forge.hefr.ch/jacky.casas) - jacky.casas@hefr.ch
-- **Professeur**: [Elena Mugellini](https://gitlab.forge.hefr.ch/elena.mugellini) - elena.mugellini@hefr.ch
-- **Professeur**: [Omar Abou Khaled](https://gitlab.forge.hefr.ch/omar.aboukhaled) - omar.aboukhaled@hefr.ch
-- **Dates**: from 01.07.2020 to 31.08.2020
-
-
-Context
---------
-
-This project ...
-
+- **Student** : Grégory Geinoz - gregory.geinoz@edu.hefr.ch
+- **Supervisor** : [Pascal Bruegger](https://gitlab.forge.hefr.ch/pascal.bruegger) - pascal.bruegger@hefr.ch
+- **Client** : [Samuel Fringeli](https://gitlab.forge.hefr.ch/samuel.fringeli) - samuel.fringeli@hefr.ch
+- **Dates** : du 27.09.2021 au 09.02.2022
 
 Description
 -----------
 
-The goal of the project is to ...
-
+Behind food is a mobile application used in an exhibition on sustainable development. It allows visitors to explore the hidden sides of different everyday foods through a journey of various themes related to these foods. This pathway provides access to images, videos and texts to illustrate the characteristics of the foods concerned. These elements are updated by the team managing the exhibition, through a backend interface, and are accessible from the application through an API.
+In the current version of the application, a webview is loaded which displays images and videos as the user moves through the structure, but the media is not saved in the application's local storage, making it impossible to use the application offline. As the exhibition aims to operate entirely offline, it would be necessary to ensure that the data displayed is downloaded locally, with a system for updating the latest changes made on the backend by the user of the application.
 
 Content
 -------
