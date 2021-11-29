@@ -41,14 +41,15 @@ function getContent(data) {
     if (data.media !== null) {
         if (data.media.mime.includes('image')) {
             return `<div style="padding: 20px;" @click="$event.target.ownerDocument.getElementById('myModal').style.display = 'block'; $event.target.ownerDocument.getElementById('modal-content-div').innerHTML='<img src=https://adelente-admin.samf.me${data.media.url}>'"><img style="max-width: 285px; max-height: 285px;" src="https://adelente-admin.samf.me${data.media.url}"></div>`;
-        
+        }
         if (data.media.mime.includes('video')) {
             if (devicePlatform === 'android'){
                 let url = 'https://adelente-admin.samf.me' + data.media.url;
+                
                 return `<div height="350" width="350" onClick="(function(){
                     VideoPlayer.play('${url}');
                     return false;
-                    })();return false;"><video></video></div>`
+                    })();return false;"><video></video></div>`;
             }else{
                 return `<video height="280" width="280" src="https://adelente-admin.samf.me${data.media.url}" controls></video>`;
             }
