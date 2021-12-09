@@ -38,40 +38,61 @@
 }
 
 #myModal img {
-    width: 90%;
-    margin: auto;
-}
-
-/* Portait mode */
-@media only screen and (min-device-width: 320px) and (max-device-width: 479px){
-    body{
-        background-color: red;
-    }
+    width: 95%;
 }
 
 /* Extra small devices (phones, 600px and down) */
 @media only screen and (max-width: 600px) {
-    
+    body{
+        zoom: 0.5;
+    }
 } 
 
 /* Small devices (portrait tablets and large phones, 600px and up) */
 @media only screen and (min-width: 600px) {
-    
+    body{
+        zoom: 0.8;
+    }
 } 
 
 /* Medium devices (landscape tablets, 768px and up) */
 @media only screen and (min-width: 768px) {
-    
+    body{
+        zoom: 0.9;
+    }
 } 
 
 /* Large devices (laptops/desktops, 992px and up) */
-@media only screen and (min-width: 800px) {
+@media only screen and (min-width: 600px) {
     body{
-        background-color: white;
+        zoom: 1;
+    }
+    .textContentAndroid{
+        max-width: 180px;
+        font-size: 2.5vw;
+        margin: auto;
+    }
+    .textContent{
+        max-width: 250px;
+        padding: 10px;
     }
 } 
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
-@media only screen and (min-width: 1200px) {
-
+@media only screen and (min-width: 1000px) {
+    body{
+        zoom: 1.5;
+    }
+    .textContent{
+        font-size: 2.5vw;
+        max-width: 250px;
+    }
+    .textContentAndroid{
+        font-size: 2vw;
+        background-color: white;
+        max-width: 250px;
+    }
+    #myModal img {
+        width: 100%;    
+    }
 }
