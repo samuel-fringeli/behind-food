@@ -47,7 +47,7 @@ function getContent(data) {
                 let url = 'https://adelente-admin.samf.me' + data.media.url;
                 
                 return `<div height="350" width="350" onClick="(function(){
-                    VideoPlayer.play('${url}');
+                    VideoPlayer.play('${url}',{scalingMode: VideoPlayer.SCALING_MODE.SCALE_TO_FIT_WITH_CROPPING});
                     return false;
                     })();return false;"><video></video></div>`;
             }else{
