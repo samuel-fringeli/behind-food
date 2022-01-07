@@ -91,7 +91,7 @@ function flatten(initialData) {
     let resultData = [];
 
     function flatten(data) {
-        resultData.push(data)
+        resultData.push(data);
 
         if (!(data && data.enfants && data.enfants.length > 0)) {
             return;
