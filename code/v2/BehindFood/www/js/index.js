@@ -129,7 +129,7 @@ function downloadFile(url){
                 uri,
                 localURL,
                 function(entry){
-                    // file downloaded
+                    console.log(entry);
                     console.log("File downloaded : " + localURL);
                     promise.resolve();
                 }, 
@@ -314,12 +314,9 @@ function onOKpressed(){
        xhr.onload = function(){
         if (this.status === 200) {
             var fileData = this.response;
-            //stringJSON = this.response;
             fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
-                //writeFile(fileEntry, fileData);
                 fileEntry.createWriter(function(fileWriter){
                     fileWriter.onwriteend = function(){
-                        //initApp(prepareJSON("cachedJSON.json", true);
                         let cachedJsonDatas = extractFilesAndFlatten(fileData, true);
                         prepareForDownloads(cachedJsonDatas.filesArray);
                         initApp(cachedJsonDatas.flattenData); 
@@ -376,9 +373,8 @@ function downloadJsonAndCompare(){
                 navigator.notification.alert("Le contenu de l'application est déjà à jour.", null, "Contenu à jour");
             }
 
-            // Ecraser cachedJSON avec newJSON et initApp
+            // Écraser cachedJSON avec newJSON et initApp
             fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
-                //writeFile(fileEntry, fileData);
                 fileEntry.createWriter(function(fileWriter){
                     fileWriter.onwriteend = function(){
                         initApp(newJsonDatas.flattenData);
@@ -399,8 +395,6 @@ function onConfirm(index){
     if (index === 1) {
         //Bouton OUI : mise à jour désirée
         downloadJsonAndCompare();
-        //let flattenData = prepareJSON("cachedJSON.json", true);
-        //initApp(flattenData);
     }else{
         //Bouton NON : mise à jour non désirée
         let cachedJsonDatas = extractFilesAndFlatten(stringJSON, false);
@@ -449,7 +443,8 @@ function onDeviceReady() {
             }else{
                 // Connexion non-détectée
                 navigator.notification.alert("Pas de connexion à internet détéctée. L'application utilisera les fichiers locaux.", function(){
-                    initApp(prepareJSON("cachedJSON.json", false));
+                    let cachedJsonDatas = extractFilesAndFlatten(stringJSON, false);
+                    initApp(cachedJsonDatas.flattenData);
                 }, "Pas de connexion internet");
             }
         }, function(){
