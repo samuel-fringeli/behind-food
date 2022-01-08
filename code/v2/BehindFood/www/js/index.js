@@ -26,12 +26,8 @@ let serverURL = 'https://adelente-admin.samf.me';
 let localhost = 'http://127.0.0.1:8080/';
 
 var converter;
-var fileCounter = 0;
-var size;
 var stringJSON = '';
-var newStringJSON = '';
 var spinnerOptions = { dimBackground: true };
-
 var devicePlatform = window.cordova.platformId;
 
 function onErrorLoadFs(){
@@ -112,23 +108,29 @@ function flatten(initialData) {
 }
 
 function downloadFile(url){
-    // Fonction de téléchargement pour un fichier dont l'url est donné, basé sur une promesse jQuery
+    // Fonction de téléchargement pour un fichier dont l'url est donné, retourne une promesse jQuery. Peu importe si le nom du
+    // fichier passé en paramètre existe déjà sur le disque, cela écrasera le fichier existant grâce 
+    // aux paramètres {create:true,exclusive:false} du FileSystem.
 
-    // Le plugin FileTransfer est déprécié, mais toujours fonctionnel, et gère toujours très bien les gros fichiers et évite les CORS.
+    // Le plugin FileTransfer est déprécié, mais toujours fonctionnel, et gère toujours très bien les gros fichiers 
+    // et évite les problèmes de CORS.
     var promise = new $.Deferred();
     window.requestFileSystem(PERSISTENT, 0, function(fs){
+        // Permet de trouver la sous-chaîne à partir du dernier "/", donc le nom du fichier et l'extension
         var fileName = url.substring(url.lastIndexOf("/") + 1);
+        // Permet de trouver la sous-chaîne à partir du premier "|", donc l'url complet sans la date
+        var fileUrl = url.substring(url.indexOf("|") + 1);
+
         fs.root.getFile(fileName, { create : true, exclusive : false }, function(fileEntry){
             var localURL = fileEntry.toURL();
             var fileTransfer = new FileTransfer();
-            var uri = encodeURI(url);
+            var uri = encodeURI(fileUrl);
             fileTransfer.download(
                 uri,
                 localURL,
                 function(entry){
                     // file downloaded
-                    //SpinnerDialog.show("Téléchargement", "Fichier "+ (++fileCounter) +" sur "+size);
-                    //SpinnerPlugin.activityStart("Téléchargement. Fichier "+ (++fileCounter) +" sur "+size, spinnerOptions);
+                    console.log("File downloaded : " + localURL);
                     promise.resolve();
                 }, 
                 function(err){
@@ -139,7 +141,11 @@ function downloadFile(url){
     }, onErrorLoadFs);
     return promise;
 
-    /* Téléchargement avec des XHR, fonctionnel mais ne gère pas bien les gros fichiers (memory-out-of-bounds)
+    /* // Téléchargement avec des XHR, fonctionnel mais ne gère pas les gros fichiers (memory-out-of-bounds) pour Chrome.
+    // Afin d'utiliser ce code, il faut pouvoir diviser en plusieurs morceaux (chunks) le blob reçu puis écrire ces morceaux les
+    // un après les autres dans un fichier. Malheuresement, les requêtes XHR appondent en mémoire les données tant que des
+    // données sont reçues du serveur. C'est pourquoi le téléchargement de large fichier (>100Mb) crashent si la mémoire est mal
+    // gérée (Chrome...).
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.responseType = 'blob';
@@ -164,12 +170,10 @@ function downloadFile(url){
         });
         return xhr;
     });*/
-    
 }
 
 function downloadAllFiles(filesArray){
-    // Fonction qui permet de résoudre toutes les promesses une après l'autre
-    size = filesArray.length;
+    // Fonction qui permet de résoudre toutes les promesses une après l'autre selon un tableau d'url de fichiers à télécharger
     var current = Promise.resolve();
     filesArray.forEach(function(url){
         current = current.then(function(){
@@ -179,36 +183,62 @@ function downloadAllFiles(filesArray){
     return current;
 }
 
-function prepareJSON(json, withDownload){
-    // Fonction à modifier afin de ne l'utiliser que si on a des fichiers à télécharger, flattenData ne devrait pas être retourné
-    let filesArray = [];    
-    let recursiveData = recursiveAdd(stringJSON);
-    let flattenData = flatten(recursiveData);
-    let components = flattenData.map(item => {
-        if (!(item && item.enfants && item.enfants.length > 0)) {
-            if (item.media !== null) {
-                if (navigator.connection.type !== 'none' && withDownload) {
-                    filesArray.push(serverURL+item.media.url);
-                }
-            }
-        } else {
-            if (item.media !== null) {
-                if (navigator.connection.type !== 'none' && withDownload) {
-                    filesArray.push(serverURL+item.media.url);
-                }
-            }
-        }
+function prepareForDownloads(filesArray){
+    // Fonction qui permet de lancer la série de promesses pour un tableau d'url
+    SpinnerPlugin.activityStart("Téléchargement des fichiers ...")
+    downloadAllFiles(filesArray).then(function(){
+        SpinnerPlugin.activityStop();
+    }).catch(function(e){
+        navigator.notification.alert("Something went wrong : " + e);
+    })
+}
+
+function deleteFile(url){
+    // Fonction qui permet de supprimer un fichier des fichiers locaux à partir de son URL
+    var fileName = url.substring(url.lastIndexOf("/") + 1);
+    window.requestFileSystem(PERSISTENT, 0, function(fs) {
+        fs.root.getFile(fileName, { create : false }, function(fileEntry){
+            fileEntry.remove(function(file){
+                console.log("File removed : "+file);
+            }, function(err){
+                console.log("Error while removing file : "+err);
+            });
+        });
     });
+}
+
+function deleteAllFiles(filesArray){
+    // Fonction qui permet de supprimer tous les fichiers d'un tableau d'URL
+    // url de type : "<updated_at>|https://adelente.../uploads/<hash>.<ext>"
+    filesArray.forEach(function(url){
+        deleteFile(url);
+    });
+}
+
+function extractFilesAndFlatten(json, withDownload){
+    // Fonction qui permet de préparer le flattenData afin d'initialiser la Vue, mais également un tableau d'url pour les fichiers
+    // à télécharger si c'est nécessaire. Sinon le tableau est retourné vide. Ces deux éléments sont retournés dans un objet à
+    // utiliser comme ceci : let object = extractFilesAndFlatten(...); object.filesArray[...] ou object.flattenData.
+    let filesArray = [];
+    let recursiveData = recursiveAdd(json);
+    let flattenData = flatten(recursiveData);
     if (withDownload) {
-        SpinnerPlugin.activityStart("Téléchargement des fichiers ...")
-        downloadAllFiles(filesArray).then(function(){
-            SpinnerPlugin.activityStop();
-            //SpinnerDialog.hide();
-        }).catch(function(e){
-            navigator.notification.alert("Something went wrong : " + e);
-        })
+        let components = flattenData.map(item => {
+            if (!(item && item.enfants && item.enfants.length > 0)) {
+                if (item.media !== null) {
+                    // url de type : "<updated_at>|https://adelente.../uploads/<hash>.<ext>"
+                    // Ainsi, même si un fichier existe déjà avec le même nom mais qu'il a été mis à jour,
+                    // les tests de comparaisons le remarqueront.
+                    filesArray.push(item.media.updated_at+"|"+serverURL+item.media.url);
+                }
+            } else {
+                if (item.media !== null) {
+                    filesArray.push(item.media.updated_at+"|"+serverURL+item.media.url);
+                }
+            }
+        });
     }
-    return flattenData;
+    return { filesArray, flattenData };
 }
 
 function initApp(flattenData){
@@ -275,31 +305,89 @@ function initApp(flattenData){
     });
 }
 
-function writeFile(fileEntry, fileData){
-    // Fonction pour créer le fichier cachedJSON à la première utilisation puis prepareJSON
-    fileEntry.createWriter(function(fileWriter){
-        fileWriter.onwriteend = function(){
-            let flattenData = prepareJSON("cachedJSON.json", true);
-            initApp(flattenData);
-        };
-        fileWriter.onerror = function(e){
-            navigator.notification.alert(e, null, 'fileWriter error');
-        };
-        fileWriter.write(fileData);
-    });
-}
-
 function onOKpressed(){
-    //OK pressé pour première utilisation avec connection
+    // OK pressé pour première utilisation avec connexion
+    // Donc télécharger le json, télécharger tous les fichiers, initialiser l'app et enregistrer cachedJSON.json
     window.requestFileSystem(PERSISTENT, 0, function(fs){
        var xhr = new XMLHttpRequest();
-       xhr.open("GET", "https://adelente-admin.samf.me/zircle-elements?_limit=20000", false);
+       xhr.open("GET", "https://adelente-admin.samf.me/zircle-elements?_limit=20000");
        xhr.onload = function(){
         if (this.status === 200) {
             var fileData = this.response;
-            stringJSON = this.response;
+            //stringJSON = this.response;
             fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
-                writeFile(fileEntry, fileData);
+                //writeFile(fileEntry, fileData);
+                fileEntry.createWriter(function(fileWriter){
+                    fileWriter.onwriteend = function(){
+                        //initApp(prepareJSON("cachedJSON.json", true);
+                        let cachedJsonDatas = extractFilesAndFlatten(fileData, true);
+                        prepareForDownloads(cachedJsonDatas.filesArray);
+                        initApp(cachedJsonDatas.flattenData); 
+                    };
+                    fileWriter.onerror = function(e){
+                        navigator.notification.alert(e, null, 'fileWriter error');
+                    };
+                    fileWriter.write(fileData);
+                });
+            }, onErrorCreateFile);
+        }
+       };
+       xhr.send(); 
+    }, onErrorLoadFs);
+}
+
+function downloadJsonAndCompare(){
+    window.requestFileSystem(PERSISTENT, 0, function(fs){
+       var xhr = new XMLHttpRequest();
+       xhr.open("GET", "https://adelente-admin.samf.me/zircle-elements?_limit=20000");
+       xhr.onload = function(){
+        if (this.status === 200) {
+            var newJson = this.response;
+            
+            let newJsonDatas = extractFilesAndFlatten(newJson, true);
+            let cachedJsonDatas = extractFilesAndFlatten(stringJSON, true);
+            let filesToDownload = [];
+
+            // Parcourir le tableau de newJsonDatas
+            for (var i = 0; i < newJsonDatas.filesArray.length; i++) {
+                // Si on trouve le fichier dans le tableau de cachedJsonDatas (date & url & nom égaux)
+                // alors le sortir du tableau de cachedJsonDatas 
+                let index = cachedJsonDatas.filesArray.indexOf(newJsonDatas.filesArray[i]);
+                if(index > -1){
+                    cachedJsonDatas.filesArray.splice(index, 1);
+                }else{
+                    // Sinon mettre cet url dans le tableau filesToDownload
+                    filesToDownload.push(newJsonDatas.filesArray[i]);
+                }
+            }
+
+            // Tous les fichiers restants dans le tableau cachedJsonDatas doivent donc être supprimés
+            if(cachedJsonDatas.filesArray.length > 0){
+                deleteAllFiles(cachedJsonDatas.filesArray);
+            }
+
+            // Tous les fichiers dans le tableau filesToDownload doivent être téléchargés
+            if (filesToDownload.length > 0) {
+                prepareForDownloads(filesToDownload);
+            }
+
+            // Si les deux listes sont vides, c'est que le contenu est à jour
+            if(cachedJsonDatas.filesArray.length === 0 && filesToDownload.length === 0){
+                navigator.notification.alert("Le contenu de l'application est déjà à jour.", null, "Contenu à jour");
+            }
+
+            // Ecraser cachedJSON avec newJSON et initApp
+            fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
+                //writeFile(fileEntry, fileData);
+                fileEntry.createWriter(function(fileWriter){
+                    fileWriter.onwriteend = function(){
+                        initApp(newJsonDatas.flattenData);
+                    };
+                    fileWriter.onerror = function(e){
+                        navigator.notification.alert(e, null, 'fileWriter error');
+                    };
+                    fileWriter.write(newJson);
+                });
             }, onErrorCreateFile);
         }
        };
@@ -310,14 +398,13 @@ function onOKpressed(){
 function onConfirm(index){
     if (index === 1) {
         //Bouton OUI : mise à jour désirée
-        //Pas encore implémenter de fonction de contrôle, pour l'instant c'est pour le debugage
-        //ToDo: télécharger newJSON.json, comparer cachedJSON (déjà chargé dans stringJSON global)
-        let flattenData = prepareJSON("cachedJSON.json", true);
-        initApp(flattenData);
+        downloadJsonAndCompare();
+        //let flattenData = prepareJSON("cachedJSON.json", true);
+        //initApp(flattenData);
     }else{
         //Bouton NON : mise à jour non désirée
-        let flattenData = prepareJSON("cachedJSON.json", false);
-        initApp(flattenData);
+        let cachedJsonDatas = extractFilesAndFlatten(stringJSON, false);
+        initApp(cachedJsonDatas.flattenData);
     }
 }
 
@@ -345,6 +432,7 @@ function onDeviceReady() {
         });
     }
 
+    // Contrôler si cachedJSON.json existe, si oui, déjà mettre le résultat dans une variable globale pour une utilisation future
     window.requestFileSystem(PERSISTENT, 0, function(fs){
         fs.root.getFile("cachedJSON.json", {create : false}, function(fileEntry){
             fileEntry.file(function (file){
@@ -356,22 +444,22 @@ function onDeviceReady() {
             });
             // Un fichier cachedJSON existe dans les fichiers
             if (navigator.connection.type !== 'none') {
-                // Connection détectée
+                // Connexion détectée
                 navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes.", onConfirm, 'Mise à jour', ['OUI','NON']);
             }else{
-                // Connection non-détectée
-                navigator.notification.alert("Pas de connection à internet détéctée. L'application utilisera les fichiers locaux.", function(){
+                // Connexion non-détectée
+                navigator.notification.alert("Pas de connexion à internet détéctée. L'application utilisera les fichiers locaux.", function(){
                     initApp(prepareJSON("cachedJSON.json", false));
-                });
+                }, "Pas de connexion internet");
             }
         }, function(){
             // Pas de fichier cachedJSON dans les fichiers
             if (navigator.connection.type !== 'none') {
-                // Connection détectée
-                navigator.notification.alert("Première utilisation détéctée. L'initialisation de l'application prendra quelques minutes", onOKpressed);
+                // Connexion détectée
+                navigator.notification.alert("Première utilisation détéctée. L'initialisation de l'application prendra quelques minutes.", onOKpressed, "Première utilisation");
             }else{
-                // Connection non-détectée
-                navigator.notification.alert("Erreur : première utilisation détéctée. Veuillez trouver une connection à internet pour utiliser l'application pour la première fois.", onConfirmExit);
+                // Connexion non-détectée
+                navigator.notification.alert("Erreur : première utilisation détéctée. Veuillez trouver une connexion à internet pour utiliser l'application pour la première fois.", onConfirmExit, "Pas de connexion internet");
             }
         });
     }, onErrorLoadFs);
