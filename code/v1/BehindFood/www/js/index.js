@@ -49,7 +49,7 @@ function getContent(data) {
                 return `<div height="350" width="350" onClick="(function(){
                     VideoPlayer.play('${url}',{scalingMode: VideoPlayer.SCALING_MODE.SCALE_TO_FIT_WITH_CROPPING});
                     return false;
-                    })();return false;"><video></video></div>`;
+                    })();return false;"><video height="250" width="250"></video></div>`;
             }else{
                 return `<video height="280" width="280" src="https://adelente-admin.samf.me${data.media.url}" controls></video>`;
             }
@@ -57,7 +57,11 @@ function getContent(data) {
     }
 
     if (data.contenu !== null) {
-        return `<div style="max-width: 250px; max-height: 285px; overflow: scroll;">${converter.makeHtml(data.contenu)}</div>`;
+        if (devicePlatform === 'android'){
+            return `<div class="textContentAndroid" style="max-height: 285px; overflow: auto;">${converter.makeHtml(data.contenu)}</div>`;
+        }else{
+            return `<div class="textContent" style="max-height: 285px; overflow: auto;">${converter.makeHtml(data.contenu)}</div>`;
+        }
     }
 
     return 'élément manquant...';
@@ -87,7 +91,7 @@ function flatten(initialData) {
     let resultData = [];
 
     function flatten(data) {
-        resultData.push(data)
+        resultData.push(data);
 
         if (!(data && data.enfants && data.enfants.length > 0)) {
             return;
@@ -116,14 +120,40 @@ xhr.addEventListener("readystatechange", function () {
             if (!(item && item.enfants && item.enfants.length > 0)) {
                 template = `<z-view>${getContent(item)}</z-view>`;
             } else {
-                let zspots = '';
-                for (let i = 0; i < item.enfants.length; i++) {
-                    let fontSize = 18 - item.enfants[i].lien.split(' ').length;
-                    zspots += `<z-spot slot="extension" :angle="${i * 35}" to-view="view_${item.enfants[i].id}">
-                        <div style="font-size: ${fontSize}px;">${item.enfants[i].lien}</div>
-                    </z-spot>`;
+                if (devicePlatform === 'android'){
+                    let zspots = '';
+                    for (let i = 0; i < item.enfants.length; i++) {
+                        let fontSize = 0;
+                        if (window.screen.width > 600){
+                            fontSize = 13 - item.enfants[i].lien.split(' ').length;
+                        }
+                        if (window.screen.width > 1000){
+                            fontSize = 19 - item.enfants[i].lien.split(' ').length;
+                        }
+                        zspots += `<z-spot slot="extension" :angle="${i * 35}" to-view="view_${item.enfants[i].id}">
+                            <div style="font-size: ${fontSize}px; padding:5px;">${item.enfants[i].lien}</div>
+                        </z-spot>`;
+                    }
+                    template = `<z-view>${getContent(item)}${zspots}</z-view>`;  
+                }else{
+                    let zspots = '';
+                    for (let i = 0; i < item.enfants.length; i++) {
+                        let fontSize = 0;
+                        if (window.screen.width > 500){
+                            fontSize = 20 - item.enfants[i].lien.split(' ').length;
+                        }
+                        if (window.screen.width > 1000){
+                            fontSize = 25 - item.enfants[i].lien.split(' ').length;
+                        }else{
+                            fontSize = 17 - item.enfants[i].lien.split(' ').length;
+                        }                        
+                        zspots += `<z-spot slot="extension" :angle="${i * 35}" to-view="view_${item.enfants[i].id}">
+                            <div style="font-size: ${fontSize}px; padding:5px;">${item.enfants[i].lien}</div>
+                        </z-spot>`;
+                    }
+                    template = `<z-view>${getContent(item)}${zspots}</z-view>`;  
                 }
-                template = `<z-view>${getContent(item)}${zspots}</z-view>`;
+                 
             }
             return { viewId, template };
         });
