@@ -195,7 +195,7 @@ function prepareTocheckIfAllFilesExist(filesArray){
     // Fonction qui permet de lancer la série de promesses pour un tableau d'url
     // Si une promesse est rompue, cela va être catché et il est donc intéressant d'informer l'utilisateur qu'il manque
     // un fichier et qu'il serait nécessaire de mettre à jour l'application. 
-    SpinnerPlugin.activityStart("Contrôle du contenu en cours...");
+    SpinnerPlugin.activityStart("Contrôle du contenu local en cours...");
     checkIfAllFilesExist(filesArray).then(function(){
         SpinnerPlugin.activityStop();
     }).catch(function(e){
@@ -440,11 +440,7 @@ function onConfirmExit(){
 
 function onButtonClicked(){
     // Fonction qui gère le bouton de mise à jour
-    if (navigator.connection.type !== 'none') {
-        navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes.", onConfirmUpdate, 'Mise à jour', ['OUI','NON']);
-    }else{
-        navigator.notification.alert("Mise à jour impossible sans connexion", null, "Mise à jour");
-    }
+    navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes.", onConfirmUpdate, 'Mise à jour', ['OUI','NON']);
 }
 
 function onDeviceReady() {
@@ -484,7 +480,8 @@ function onDeviceReady() {
                         // qu'il serait bon de mettre à jour son application.
                         initApp(cachedJsonDatas.flattenData);
                     }else{
-                        // Connexion non-détectée. Contrôle de contenu et lancement de l'application.
+                        // Connexion non-détectée. Contrôle de contenu et lancement de l'application. Cacher le bouton download.
+                        document.getElementById("br-icon").style.display = "none";
                         navigator.notification.alert("Pas de connexion à internet détéctée. L'application utilisera les fichiers locaux.", function(){
                             prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
                             initApp(cachedJsonDatas.flattenData);
