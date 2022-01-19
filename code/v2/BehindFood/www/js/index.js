@@ -29,6 +29,7 @@ var converter;
 var spinnerOptions = { dimBackground: true };
 var devicePlatform = window.cordova.platformId;
 var filesToDownload = [];
+var filesArraySize = 0;
 
 let cachedJsonDatas;
 
@@ -145,9 +146,12 @@ function downloadFile(url){
 
 function downloadAllFiles(filesArray){
     // Fonction qui permet de résoudre toutes les promesses une après l'autre selon un tableau d'url de fichiers à télécharger
+    var fileIndex = 0;
     var current = Promise.resolve();
     filesArray.forEach(function(url){
         current = current.then(function(){
+            document.getElementById("myProgress").value = ++fileIndex;
+            document.getElementById("myProgressText").innerHTML = "Fichier " + fileIndex + " sur " + (filesArraySize-1);
             return downloadFile(url);
         });
     });
@@ -156,9 +160,10 @@ function downloadAllFiles(filesArray){
 
 function prepareForDownloads(filesArray){
     // Fonction qui permet de lancer la série de promesses pour un tableau d'url
-    SpinnerPlugin.activityStart("Téléchargement des fichiers ...");
+    document.getElementById("myLoadingModal").style.display = 'block';
+    document.getElementById("myProgress").max = filesArraySize;
     downloadAllFiles(filesArray).then(function(){
-        SpinnerPlugin.activityStop();
+        document.getElementById("myLoadingModal").style.display = 'none';
         prepareTocheckIfAllFilesExist(filesArray);
     }).catch(function(e){
         navigator.notification.alert("Une erreur est survenue lors du téléchargement des fichiers. Veuillez essayer de mettre à jour l'application pour compléter le téléchargement.", null, "Erreur lors du téléchargement");
@@ -185,6 +190,9 @@ function checkIfAllFilesExist(filesArray){
     var current = Promise.resolve();
     filesArray.forEach(function(url){
         current = current.then(function(){
+            return checkIfFileExists(url);
+        }, function(err){
+            filesArraySize++;
             return checkIfFileExists(url);
         });
     });
@@ -331,6 +339,7 @@ function onOKpressed(){
                 fileEntry.createWriter(function(fileWriter){
                     fileWriter.onwriteend = function(){
                         cachedJsonDatas = extractFilesAndFlatten(fileData);
+                        filesArraySize = cachedJsonDatas.filesArray.length;
                         prepareForDownloads(cachedJsonDatas.filesArray);
                         initApp(cachedJsonDatas.flattenData); 
                     };
@@ -372,11 +381,13 @@ function downloadJsonAndCompare(){
                 }else{
                     // Sinon mettre cet url dans le tableau filesToDownload
                     filesToDownloadOnline.push(url);
+                    filesArraySize++;
                 }
             }
 
             // Appondre les deux tableaux de fichiers à télécharger
             let result = filesToDownloadOnline.concat(filesToDownload);
+            filesToDownload = [];
 
             // Tous les fichiers restants dans le tableau cachedJsonDatas doivent donc être supprimés car ils ne sont
             // pas utilisés dans newJsonDatas, ils sont donc en trop
@@ -404,7 +415,7 @@ function downloadJsonAndCompare(){
                             // Aucun contenu n'a été téléchargé, pas besoin de recharger la page
                             navigator.notification.alert("Le contenu de l'application est déjà à jour.", null, "Contenu à jour");
                         }else{
-                            window.location.reload(true)
+                            result = [];
                         }
                     };
                     fileWriter.onerror = function(e){
@@ -428,6 +439,7 @@ function onConfirmUpdate(index){
         // Bouton NON : mise à jour non désirée
         // Dans le cas où des fichiers seraient manquants (déterminés au démarrage), rappel
         if (filesToDownload.length !== 0) {
+            console.log(filesToDownload);
             navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
         }
     }
