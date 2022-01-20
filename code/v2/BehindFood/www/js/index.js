@@ -158,13 +158,26 @@ function downloadAllFiles(filesArray){
     return current;
 }
 
-function prepareForDownloads(filesArray){
+function onDownloadsOver(){
+    window.location.reload(true);
+}
+
+function prepareForDownloads(filesArray, fromUpdate){
     // Fonction qui permet de lancer la série de promesses pour un tableau d'url
     document.getElementById("myLoadingModal").style.display = 'block';
     document.getElementById("myProgress").max = filesArraySize;
     downloadAllFiles(filesArray).then(function(){
         document.getElementById("myLoadingModal").style.display = 'none';
-        prepareTocheckIfAllFilesExist(filesArray);
+        if (fromUpdate) {
+            cordova.plugins.CorHttpd.stopServer(function(){
+                //navigator.notification.alert("Téléchargement du contenu terminé. Veuillez presser sur OK pour rafraîchir l'application.", onDownloadsOver, "Téléchargement terminé");
+                window.location.reload(true);
+            }, function(err) {
+                console.log("Erreur à l'arrêt du serveur local : " + err);
+            });
+        }else{
+            prepareTocheckIfAllFilesExist(filesArray);
+        }
     }).catch(function(e){
         navigator.notification.alert("Une erreur est survenue lors du téléchargement des fichiers. Veuillez essayer de mettre à jour l'application pour compléter le téléchargement.", null, "Erreur lors du téléchargement");
     })
@@ -340,7 +353,7 @@ function onOKpressed(){
                     fileWriter.onwriteend = function(){
                         cachedJsonDatas = extractFilesAndFlatten(fileData);
                         filesArraySize = cachedJsonDatas.filesArray.length;
-                        prepareForDownloads(cachedJsonDatas.filesArray);
+                        prepareForDownloads(cachedJsonDatas.filesArray, false);
                         initApp(cachedJsonDatas.flattenData); 
                     };
                     fileWriter.onerror = function(e){
@@ -399,7 +412,7 @@ function downloadJsonAndCompare(){
             // Tous les fichiers dans le tableau filesToDownloadOnline doivent être téléchargés, c'est à dire les nouveaux fichiers
             // trouvés dans newJsonDatas et ceux qui manqueraient dans filesToDownload
             if (result.length > 0) {
-                prepareForDownloads(result);
+                prepareForDownloads(result, true);
                 console.log("files to download : " + result);
             }
 
@@ -472,7 +485,7 @@ function onDeviceReady() {
             'port' : 8080,
             'localhost_only' : true
         }, null, function(err) {
-            navigator.notification.alert("Erreur de serveur local : " + err);
+            console.log("Erreur au démarrage du serveur local : " + err);
         });
     }
 
