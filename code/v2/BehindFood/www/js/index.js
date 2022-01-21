@@ -17,8 +17,6 @@
  * under the License.
  */
 
-// Wait for the deviceready event before using any of Cordova's device APIs.
-// See https://cordova.apache.org/docs/en/latest/cordova/events/events.html#deviceready
 document.addEventListener('deviceready', onDeviceReady, false);    
 
 let rootURL = 'cdvfile://localhost/persistent/';
@@ -42,6 +40,7 @@ function onErrorCreateFile(){
 }
 
 function getContent(data) {
+    // Fonction originale de l'application web pour créer des tags HTML selon le contenu.
     if (data.media !== null) {
         var url = '';
 
@@ -77,6 +76,7 @@ function getContent(data) {
 }
 
 function recursiveAdd(responseText) {
+    // Fonction originale de l'application web pour ajouter récursivement le contenu de la réponse JSON.
     let reformatResult = JSON.parse(responseText);
     function recursiveChildrenAdd(currentElements) {
         for (let i = 0; i < currentElements.length; i++) {
@@ -94,6 +94,7 @@ function recursiveAdd(responseText) {
 }
 
 function flatten(initialData) {
+    // Fonction originale de l'application web pour aplatir les éléments ajoutés récursivement. 
     let resultData = [];
     function flatten(data) {
         resultData.push(data)
@@ -111,7 +112,7 @@ function flatten(initialData) {
 }
 
 function downloadFile(url){
-    // Fonction de téléchargement pour un fichier dont l'url est donné, retourne une promesse jQuery. Peu importe si le nom du
+    // Fonction de téléchargement pour un fichier dont l'URL est donné, retourne une promesse jQuery. Peu importe si le nom du
     // fichier passé en paramètre existe déjà sur le disque, cela écrasera le fichier existant grâce 
     // aux paramètres {create:true,exclusive:false} du FileSystem.
 
@@ -119,9 +120,9 @@ function downloadFile(url){
     // et évite les problèmes de CORS.
     var promise = new $.Deferred();
     window.requestFileSystem(PERSISTENT, 0, function(fs){
-        // Permet de trouver la sous-chaîne à partir du dernier "/", donc le nom du fichier et l'extension
+        // Permet de trouver la sous-chaîne à partir du dernier "/", donc le nom du fichier et l'extension.
         var fileName = url.substring(url.lastIndexOf("/") + 1);
-        // Permet de trouver la sous-chaîne à partir du premier "|", donc l'url complet sans la date
+        // Permet de trouver la sous-chaîne à partir du premier "|", donc l'URL complet sans la date.
         var fileUrl = url.substring(url.indexOf("|") + 1);
 
         fs.root.getFile(fileName, { create : true, exclusive : false }, function(fileEntry){
@@ -145,7 +146,7 @@ function downloadFile(url){
 }
 
 function downloadAllFiles(filesArray){
-    // Fonction qui permet de résoudre toutes les promesses une après l'autre selon un tableau d'url de fichiers à télécharger
+    // Fonction qui permet de résoudre toutes les promesses une après l'autre selon un tableau d'URLs de fichiers à télécharger.
     var fileIndex = 0;
     var current = Promise.resolve();
     filesArray.forEach(function(url){
@@ -158,24 +159,25 @@ function downloadAllFiles(filesArray){
     return current;
 }
 
-function onDownloadsOver(){
-    window.location.reload(true);
-}
-
 function prepareForDownloads(filesArray, fromUpdate){
-    // Fonction qui permet de lancer la série de promesses pour un tableau d'url
+    // Fonction qui permet de lancer la série de promesses pour un tableau d'URLs.
     document.getElementById("myLoadingModal").style.display = 'block';
     document.getElementById("myProgress").max = filesArraySize;
     downloadAllFiles(filesArray).then(function(){
+        // Une fois tous les téléchargements terminés, enlever la barre de progression et redémarrer l'application si màj. Si iOS, éteindre le serveur local et redémarrer l'app une fois éteint.
         document.getElementById("myLoadingModal").style.display = 'none';
         if (fromUpdate) {
-            cordova.plugins.CorHttpd.stopServer(function(){
-                //navigator.notification.alert("Téléchargement du contenu terminé. Veuillez presser sur OK pour rafraîchir l'application.", onDownloadsOver, "Téléchargement terminé");
+            if(devicePlatform === 'ios'){
+                cordova.plugins.CorHttpd.stopServer(function(){
+                    window.location.reload(true);
+                }, function(err) {
+                    console.log("Erreur à l'arrêt du serveur local : " + err);
+                });
+            }else{
                 window.location.reload(true);
-            }, function(err) {
-                console.log("Erreur à l'arrêt du serveur local : " + err);
-            });
+            }
         }else{
+            // Si première utilisation, contrôle complet du contenu. Pas besoin de redémarrer car la Vue a été construite avec le JSON fraîchement téléchargé.
             prepareTocheckIfAllFilesExist(filesArray);
         }
     }).catch(function(e){
@@ -184,7 +186,7 @@ function prepareForDownloads(filesArray, fromUpdate){
 }
 
 function checkIfFileExists(url){
-    // Fonction qui permet de contrôler si un fichier existe dans le FileSystem à partir de son url, retourne une promesse JQuery. 
+    // Fonction qui permet de contrôler si un fichier existe dans le FileSystem à partir de son URL, retourne une promesse JQuery. 
     var promise = new $.Deferred();
     var fileName = url.substring(url.lastIndexOf("/") + 1);
     window.requestFileSystem(PERSISTENT, 0, function(fs){
@@ -199,7 +201,7 @@ function checkIfFileExists(url){
 }
 
 function checkIfAllFilesExist(filesArray){
-    // Fonction qui permet de résoudre toutes les promesses une après l'autre selon un tableau d'url de fichiers à contrôler
+    // Fonction qui permet de résoudre toutes les promesses une après l'autre selon un tableau d'URLs de fichiers à contrôler.
     var current = Promise.resolve();
     filesArray.forEach(function(url){
         current = current.then(function(){
@@ -213,9 +215,9 @@ function checkIfAllFilesExist(filesArray){
 }
 
 function prepareTocheckIfAllFilesExist(filesArray){
-    // Fonction qui permet de lancer la série de promesses pour un tableau d'url
+    // Fonction qui permet de lancer la série de promesses pour un tableau d'URLs.
     // Si une promesse est rompue, cela va être catché et il est donc intéressant d'informer l'utilisateur qu'il manque
-    // un fichier et qu'il serait nécessaire de mettre à jour l'application. 
+    // un ou plusieurs fichiers et qu'il serait nécessaire de mettre à jour l'application. 
     SpinnerPlugin.activityStart("Contrôle du contenu local en cours...");
     checkIfAllFilesExist(filesArray).then(function(){
         SpinnerPlugin.activityStop();
@@ -229,7 +231,7 @@ function prepareTocheckIfAllFilesExist(filesArray){
 }
 
 function deleteFile(url){
-    // Fonction qui permet de supprimer un fichier des fichiers locaux à partir de son URL
+    // Fonction qui permet de supprimer un fichier des fichiers locaux à partir de son URL.
     var fileName = url.substring(url.lastIndexOf("/") + 1);
     window.requestFileSystem(PERSISTENT, 0, function(fs) {
         fs.root.getFile(fileName, { create : false }, function(fileEntry){
@@ -243,24 +245,24 @@ function deleteFile(url){
 }
 
 function deleteAllFiles(filesArray){
-    // Fonction qui permet de supprimer tous les fichiers d'un tableau d'URL
-    // url de type : "<updated_at>|https://adelente.../uploads/<hash>.<ext>"
+    // Fonction qui permet de supprimer tous les fichiers d'un tableau d'URLs.
+    // URL de type : "<updated_at>|https://adelente.../uploads/<hash>.<ext>"
     filesArray.forEach(function(url){
         deleteFile(url);
     });
 }
 
 function extractFilesAndFlatten(json){
-    // Fonction qui permet de préparer le flattenData afin d'initialiser la Vue, mais également un tableau d'url pour les fichiers
+    // Fonction qui permet de préparer le flattenData afin d'initialiser la Vue, mais également un tableau d'URLs pour les fichiers
     // à télécharger si c'est nécessaire. Sinon le tableau est retourné vide. Ces deux éléments sont retournés dans un objet à
-    // utiliser comme ceci : let object = extractFilesAndFlatten(...); object.filesArray[...] ou object.flattenData.
+    // utiliser comme ceci : let object = extractFilesAndFlatten(json); object.filesArray[x] ou object.flattenData.
     let filesArray = [];
     let recursiveData = recursiveAdd(json);
     let flattenData = flatten(recursiveData);
     let components = flattenData.map(item => {
         if (!(item && item.enfants && item.enfants.length > 0)) {
             if (item.media !== null) {
-                // url de type : "<updated_at>|https://adelente.../uploads/<hash>.<ext>"
+                // URL de type : "<updated_at>|https://adelente.../uploads/<hash>.<ext>"
                 // Ainsi, même si un fichier existe déjà avec le même nom mais qu'il a été mis à jour,
                 // les tests de comparaisons le remarqueront.
                 filesArray.push(item.media.updated_at+"|"+serverURL+item.media.url);
@@ -275,7 +277,7 @@ function extractFilesAndFlatten(json){
 }
 
 function initApp(flattenData){
-    // Fonction de mise en place du template pour la Vue
+    // Fonction de mise en place du template pour la Vue.
     let allComponents = flattenData.map(item => {
         let viewId = 'view_' + item.id;
         if (item.titre === 'root') {
@@ -339,9 +341,9 @@ function initApp(flattenData){
 }
 
 function onOKpressed(){
-    // OK pressé pour première utilisation avec connexion
-    // Donc télécharger le json, télécharger tous les fichiers, initialiser l'app et enregistrer cachedJSON.json.
-    // Également enregistrer dans la variable globale cachedJsonDatas pour un éventuel contrôle de contenu.
+    // OK pressé pour première utilisation avec connexion.
+    // Donc télécharger le JSON, télécharger tous les fichiers, contrôler si tous les fichiers ont bien été téléchargés, initialiser l'app et enregistrer cachedJSON.json.
+    // Également enregistrer dans la variable globale cachedJsonDatas pour une éventuelle mise à jour demandée par l'utilisateur.
     window.requestFileSystem(PERSISTENT, 0, function(fs){
        var xhr = new XMLHttpRequest();
        xhr.open("GET", "https://adelente-admin.samf.me/zircle-elements?_limit=20000");
@@ -369,10 +371,10 @@ function onOKpressed(){
 }
 
 function downloadJsonAndCompare(){
-    // Fonction de contrôle de contenu. Cette fonction télécharge une nouvelle version du json sur le serveur qui peut avoir
-    // des changements par rapport au json enregistré. Elle va ensuite comparer les deux tableaux de fichiers nécessaires au
+    // Fonction de contrôle de contenu. Cette fonction télécharge une nouvelle version du JSON sur le serveur qui peut avoir
+    // des changements par rapport au JSON enregistré. Elle va ensuite comparer les deux tableaux de fichiers nécessaires au
     // bon fonctionnement de leur application respective, générés dans le extractFilesAndFlatten. Elle prend également en compte
-    // les éventuels fichiers manquants trouvés au démarrage (fichiers trouvés dans le json enregistré mais pas dans les fichiers).
+    // les éventuels fichiers manquants trouvés au démarrage (fichiers trouvés dans le JSON enregistré mais pas dans les fichiers locaux).
     window.requestFileSystem(PERSISTENT, 0, function(fs){
        var xhr = new XMLHttpRequest();
        xhr.open("GET", "https://adelente-admin.samf.me/zircle-elements?_limit=20000");
@@ -383,51 +385,52 @@ function downloadJsonAndCompare(){
             let newJsonDatas = extractFilesAndFlatten(newJson);
             let filesToDownloadOnline = [];
 
-            // Parcourir le tableau de newJsonDatas
+            // Parcourir le tableau de newJsonDatas.
             for (var i = 0; i < newJsonDatas.filesArray.length; i++) {
                 // Si on trouve le fichier dans le tableau de cachedJsonDatas (date & url & nom égaux)
-                // alors le sortir du tableau de cachedJsonDatas 
+                // alors le sortir du tableau de cachedJsonDatas.
                 var url = newJsonDatas.filesArray[i];
                 let index = cachedJsonDatas.filesArray.indexOf(url);
                 if(index > -1){
                      cachedJsonDatas.filesArray.splice(index,1);
                 }else{
-                    // Sinon mettre cet url dans le tableau filesToDownload
+                    // Sinon mettre cet url dans le tableau filesToDownload.
                     filesToDownloadOnline.push(url);
                     filesArraySize++;
                 }
             }
 
-            // Appondre les deux tableaux de fichiers à télécharger
+            // Appondre les deux tableaux de fichiers à télécharger.
             let result = filesToDownloadOnline.concat(filesToDownload);
             filesToDownload = [];
 
             // Tous les fichiers restants dans le tableau cachedJsonDatas doivent donc être supprimés car ils ne sont
-            // pas utilisés dans newJsonDatas, ils sont donc en trop
+            // pas utilisés dans newJsonDatas, ils sont donc en trop.
             if(cachedJsonDatas.filesArray.length > 0){
                 deleteAllFiles(cachedJsonDatas.filesArray);
                 console.log("files to delete : " + cachedJsonDatas.filesArray);
             }
 
-            // Tous les fichiers dans le tableau filesToDownloadOnline doivent être téléchargés, c'est à dire les nouveaux fichiers
-            // trouvés dans newJsonDatas et ceux qui manqueraient dans filesToDownload
+            // Tous les fichiers dans le tableau result doivent être téléchargés, c'est à dire les nouveaux fichiers
+            // trouvés dans newJsonDatas et ceux qui manqueraient dans filesToDownload.
             if (result.length > 0) {
                 prepareForDownloads(result, true);
                 console.log("files to download : " + result);
             }
 
-            // Remplacer cachedJsonDatas par newJsonDatas
+            // Remplacer cachedJsonDatas par newJsonDatas.
             cachedJsonDatas = newJsonDatas;
 
-            // Écraser cachedJSON avec newJSON
+            // Écraser cachedJSON avec newJSON.
             fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
                 fileEntry.createWriter(function(fileWriter){
                     fileWriter.onwriteend = function(){
-                        // Si les deux listes sont vides, c'est que le contenu est à jour
+                        // Si les deux listes sont vides, c'est que le contenu est à jour.
                         if(result.length === 0){
-                            // Aucun contenu n'a été téléchargé, pas besoin de recharger la page
+                            // Aucun contenu n'a été téléchargé, pas besoin de recharger la page.
                             navigator.notification.alert("Le contenu de l'application est déjà à jour.", null, "Contenu à jour");
                         }else{
+                            // Du nouveau contenu a été téléchargé, il est nécessaire de recharger la page. Ceci est effectué dans la fonction prepareForDownloads().
                             result = [];
                         }
                     };
@@ -444,13 +447,13 @@ function downloadJsonAndCompare(){
 }
 
 function onConfirmUpdate(index){
-    // Fonction qui gère les deux choix possibles quand l'utilisateur appuie sur le bouton de mise à jour avec une connexion
+    // Fonction qui gère les deux choix possibles quand l'utilisateur appuie sur le bouton de mise à jour, avec une connexion.
     if (index === 1) {
-        // Bouton OUI : mise à jour désirée
+        // Bouton OUI : mise à jour désirée.
         downloadJsonAndCompare();
     }else{
-        // Bouton NON : mise à jour non désirée
-        // Dans le cas où des fichiers seraient manquants (déterminés au démarrage), rappel
+        // Bouton NON : mise à jour non désirée.
+        // Dans le cas où des fichiers seraient manquants (déterminés au démarrage), rappel.
         if (filesToDownload.length !== 0) {
             console.log(filesToDownload);
             navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
@@ -459,12 +462,12 @@ function onConfirmUpdate(index){
 }
 
 function onConfirmExit(){
-    // Aucun fichier json enregistré et pas de connexion, quitter l'application après OK
+    // Aucun fichier JSON enregistré et pas de connexion, quitter l'application après OK.
     navigator.app.exitApp();
 }
 
 function onButtonClicked(){
-    // Fonction qui gère le bouton de mise à jour
+    // Fonction qui gère le bouton de mise à jour.
     navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes.", onConfirmUpdate, 'Mise à jour', ['OUI','NON']);
 }
 
@@ -489,16 +492,16 @@ function onDeviceReady() {
         });
     }
 
-    // Contrôler si cachedJSON.json existe, si oui, déjà mettre le résultat dans une variable globale pour une utilisation future
+    // Contrôler si cachedJSON.json existe, si oui, déjà mettre le résultat dans une variable globale pour une utilisation future.
     window.requestFileSystem(PERSISTENT, 0, function(fs){
         fs.root.getFile("cachedJSON.json", {create : false}, function(fileEntry){
             fileEntry.file(function (file){
                 var reader = new FileReader();
                 reader.onloadend = function(event){
-                    // Un fichier cachedJSON existe dans les fichiers locaux. Directement générer cachedJsonDatas
+                    // Un fichier cachedJSON existe dans les fichiers locaux. Directement générer cachedJsonDatas.
                     cachedJsonDatas = extractFilesAndFlatten(event.target.result);
                     if (navigator.connection.type !== 'none') {
-                        // Connexion détectée, contrôler si tous les fichiers demandés par le json sont disponibles
+                        // Connexion détectée, contrôler si tous les fichiers demandés par ce JSON sont disponibles.
                         prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
                         // Dans tous les cas l'application est lancée. Dans le cas où un fichier manquerait,
                         // l'application n'affichera qu'une icone de fichier vide et un message d'alerte préviendra l'utilisateur
@@ -516,12 +519,12 @@ function onDeviceReady() {
                 reader.readAsText(file);
             });
         }, function(){
-            // Pas de fichier cachedJSON dans les fichiers
+            // Pas de fichier cachedJSON dans les fichiers.
             if (navigator.connection.type !== 'none') {
                 // Connexion détectée, téléchargement de tous les fichiers puis lancement de l'application.
                 navigator.notification.alert("Première utilisation détéctée. L'initialisation de l'application prendra quelques minutes.", onOKpressed, "Première utilisation");
             }else{
-                // Connexion non-détectée
+                // Connexion non-détectée. Impossible d'installer l'app.
                 navigator.notification.alert("Erreur : première utilisation détéctée. Veuillez trouver une connexion à internet pour utiliser l'application pour la première fois.", onConfirmExit, "Pas de connexion internet");
             }
         });
