@@ -17,7 +17,9 @@
  * under the License.
  */
 
-document.addEventListener('deviceready', onDeviceReady, false);    
+document.addEventListener('deviceready', onDeviceReady, false);
+document.addEventListener('offline', onOffline, false);
+document.addEventListener('online', onOnline, false);    
 
 let rootURL = 'cdvfile://localhost/persistent/';
 let serverURL = 'https://adelente-admin.samf.me';
@@ -28,8 +30,10 @@ var spinnerOptions = { dimBackground: true };
 var devicePlatform = window.cordova.platformId;
 var filesToDownload = [];
 var filesArraySize = 0;
+var connectionChanged = 0;
 
 let cachedJsonDatas;
+let originalCachedJsonDatas;
 
 function onErrorLoadFs(){
     navigator.notification.alert("Erreur en chargeant le FileSystem");
@@ -56,7 +60,7 @@ function getContent(data) {
         if (data.media.mime.includes('video')) {
             if (devicePlatform === 'android'){                
                 return `<div height="350" width="350" onClick="(function(){
-                    VideoPlayer.play('${url}',{scalingMode: VideoPlayer.SCALING_MODE.SCALE_TO_FIT_WITH_CROPPING});
+                    VideoPlayer.play('${url}',{volume:1.0, scalingMode: VideoPlayer.SCALING_MODE.SCALE_TO_FIT});
                     return false;
                     })();return false;"><video height="250" width="250"></video></div>`;
             }else{
@@ -137,8 +141,11 @@ function downloadFile(url){
                     promise.resolve();
                 }, 
                 function(err){
+                    console.log(err);
+                    document.getElementById("myLoadingModal").style.display = 'none';
                     promise.reject();
-                }
+                },
+                true
             );
         }, onErrorCreateFile);
     }, onErrorLoadFs);
@@ -166,7 +173,7 @@ function prepareForDownloads(filesArray, fromUpdate){
     downloadAllFiles(filesArray).then(function(){
         // Une fois tous les téléchargements terminés, enlever la barre de progression et redémarrer l'application si màj. Si iOS, éteindre le serveur local et redémarrer l'app une fois éteint.
         document.getElementById("myLoadingModal").style.display = 'none';
-        if (fromUpdate) {
+        if (fromUpdate || connectionChanged > 1) {
             if(devicePlatform === 'ios'){
                 cordova.plugins.CorHttpd.stopServer(function(){
                     window.location.reload(true);
@@ -217,7 +224,9 @@ function checkIfAllFilesExist(filesArray){
 function prepareTocheckIfAllFilesExist(filesArray){
     // Fonction qui permet de lancer la série de promesses pour un tableau d'URLs.
     // Si une promesse est rompue, cela va être catché et il est donc intéressant d'informer l'utilisateur qu'il manque
-    // un ou plusieurs fichiers et qu'il serait nécessaire de mettre à jour l'application. 
+    // un ou plusieurs fichiers et qu'il serait nécessaire de mettre à jour l'application.
+    filesToDownload = [];
+    filesArraySize = 0; 
     SpinnerPlugin.activityStart("Contrôle du contenu local en cours...");
     checkIfAllFilesExist(filesArray).then(function(){
         SpinnerPlugin.activityStop();
@@ -225,7 +234,11 @@ function prepareTocheckIfAllFilesExist(filesArray){
         // Un fichier n'a pas été trouvé
         SpinnerPlugin.activityStop();
         if (filesToDownload.length !== 0) {
-            navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
+            if (navigator.connection.type === 'none') {
+                navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez trouver une connexion à internet et mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
+            }else{
+                navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
+            }
         }
     })
 }
@@ -310,12 +323,12 @@ function initApp(flattenData){
                         fontSize = 20 - item.enfants[i].lien.split(' ').length;
                     }
                     if (window.screen.width > 1000){
-                        fontSize = 25 - item.enfants[i].lien.split(' ').length;
+                        fontSize = 30 - item.enfants[i].lien.split(' ').length;
                     }else{
-                        fontSize = 17 - item.enfants[i].lien.split(' ').length;
+                        fontSize = 20 - item.enfants[i].lien.split(' ').length;
                     }                        
                     zspots += `<z-spot slot="extension" :angle="${i * 35}" to-view="view_${item.enfants[i].id}">
-                        <div style="font-size: ${fontSize}px; padding:5px;">${item.enfants[i].lien}</div>
+                        <div style="font-size: ${fontSize}px; word-wrap: break-word; -webkit-hyphens: auto; -moz-hyphens: auto; -ms-hyphens: auto;">${item.enfants[i].lien}</div>
                     </z-spot>`;
                 }
                 template = `<z-view>${getContent(item)}${zspots}</z-view>`;  
@@ -469,6 +482,22 @@ function onConfirmExit(){
 function onButtonClicked(){
     // Fonction qui gère le bouton de mise à jour.
     navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes.", onConfirmUpdate, 'Mise à jour', ['OUI','NON']);
+}
+
+function onOffline(){
+    connectionChanged++;
+    document.getElementById("br-icon").style.display = "none";
+    if (connectionChanged > 1) {
+        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
+    }
+}
+
+function onOnline(){
+    connectionChanged++;
+    document.getElementById("br-icon").style.display = "block";
+    if (connectionChanged > 1) {
+        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
+    }
 }
 
 function onDeviceReady() {
