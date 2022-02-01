@@ -33,7 +33,6 @@ var filesArraySize = 0;
 var connectionChanged = 0;
 
 let cachedJsonDatas;
-let originalCachedJsonDatas;
 
 function onErrorLoadFs(){
     navigator.notification.alert("Erreur en chargeant le FileSystem");
