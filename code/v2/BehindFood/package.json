@@ -27,12 +27,12 @@
     "plugins": {
       "cordova-plugin-whitelist": {},
       "com.moust.cordova.videoplayer": {},
-      "cordova-plugin-dialogs": {},
       "cordova-plugin-file": {},
       "cordova-plugin-network-information": {},
       "cordova-plugin-file-transfer": {},
       "cordova-plugin-httpd": {},
-      "cordova-plugin-spinner": {}
+      "cordova-plugin-spinner": {},
+      "cordova-plugin-dialogs": {}
     },
     "platforms": [
       "android",

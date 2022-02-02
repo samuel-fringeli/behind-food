@@ -31,6 +31,7 @@ var devicePlatform = window.cordova.platformId;
 var filesToDownload = [];
 var filesArraySize = 0;
 var connectionChanged = 0;
+var downloadFailed = false;
 
 let cachedJsonDatas;
 
@@ -141,6 +142,7 @@ function downloadFile(url){
                 }, 
                 function(err){
                     console.log(err);
+                    downloadFailed = true;
                     document.getElementById("myLoadingModal").style.display = 'none';
                     promise.reject();
                 },
@@ -169,6 +171,7 @@ function prepareForDownloads(filesArray, fromUpdate){
     // Fonction qui permet de lancer la série de promesses pour un tableau d'URLs.
     document.getElementById("myLoadingModal").style.display = 'block';
     document.getElementById("myProgress").max = filesArraySize;
+    downloadFailed = false;
     downloadAllFiles(filesArray).then(function(){
         // Une fois tous les téléchargements terminés, enlever la barre de progression et redémarrer l'application si màj. Si iOS, éteindre le serveur local et redémarrer l'app une fois éteint.
         document.getElementById("myLoadingModal").style.display = 'none';
@@ -187,7 +190,13 @@ function prepareForDownloads(filesArray, fromUpdate){
             prepareTocheckIfAllFilesExist(filesArray);
         }
     }).catch(function(e){
-        navigator.notification.alert("Une erreur est survenue lors du téléchargement des fichiers. Veuillez essayer de mettre à jour l'application pour compléter le téléchargement.", null, "Erreur lors du téléchargement");
+        if (connectionChanged < 2) {
+            if (navigator.connection.type === 'none') {
+                navigator.notification.alert("Une erreur est survenue lors du téléchargement des fichiers. Veuillez trouver une connexion à internet et mettre à jour l'application pour compléter le téléchargement.", null, "Erreur lors du téléchargement");
+            }else{
+                navigator.notification.alert("Une erreur est survenue lors du téléchargement des fichiers. Veuillez essayer de mettre à jour l'application pour compléter le téléchargement.", null, "Erreur lors du téléchargement");
+            }
+        }
     })
 }
 
@@ -232,7 +241,7 @@ function prepareTocheckIfAllFilesExist(filesArray){
     }).catch(function(e){
         // Un fichier n'a pas été trouvé
         SpinnerPlugin.activityStop();
-        if (filesToDownload.length !== 0) {
+        if (filesToDownload.length !== 0 && downloadFailed === false) {
             if (navigator.connection.type === 'none') {
                 navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez trouver une connexion à internet et mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
             }else{
@@ -487,7 +496,7 @@ function onOffline(){
     connectionChanged++;
     document.getElementById("br-icon").style.display = "none";
     if (connectionChanged > 1) {
-        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
+        window.location.reload(true);
     }
 }
 
@@ -495,7 +504,7 @@ function onOnline(){
     connectionChanged++;
     document.getElementById("br-icon").style.display = "block";
     if (connectionChanged > 1) {
-        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
+        window.location.reload(true);
     }
 }
 
@@ -538,10 +547,9 @@ function onDeviceReady() {
                     }else{
                         // Connexion non-détectée. Contrôle de contenu et lancement de l'application. Cacher le bouton download.
                         document.getElementById("br-icon").style.display = "none";
-                        navigator.notification.alert("Pas de connexion à internet détéctée. L'application utilisera les fichiers locaux.", function(){
-                            prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
-                            initApp(cachedJsonDatas.flattenData);
-                        }, "Pas de connexion internet");
+                        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
+                        initApp(cachedJsonDatas.flattenData);
+                        
                     }
                 }
                 reader.readAsText(file);
