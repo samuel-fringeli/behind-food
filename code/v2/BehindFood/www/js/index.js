@@ -160,7 +160,7 @@ function downloadAllFiles(filesArray){
     filesArray.forEach(function(url){
         current = current.then(function(){
             document.getElementById("myProgress").value = ++fileIndex;
-            document.getElementById("myProgressText").innerHTML = "Fichier " + fileIndex + " sur " + (filesArraySize-1);
+            document.getElementById("myProgressText").innerHTML = "Fichier " + fileIndex + " sur " + filesArraySize;
             return downloadFile(url);
         });
     });
@@ -448,8 +448,8 @@ function downloadJsonAndCompare(){
                     fileWriter.onwriteend = function(){
                         // Si les deux listes sont vides, c'est que le contenu est à jour.
                         if(result.length === 0){
-                            // Aucun contenu n'a été téléchargé, pas besoin de recharger la page.
-                            navigator.notification.alert("Le contenu de l'application est déjà à jour.", null, "Contenu à jour");
+                            // Aucun contenu n'a été téléchargé, recharger la page dans tous les cas.
+                            window.location.reload(true);
                         }else{
                             // Du nouveau contenu a été téléchargé, il est nécessaire de recharger la page. Ceci est effectué dans la fonction prepareForDownloads().
                             result = [];
