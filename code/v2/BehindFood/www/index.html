@@ -5,7 +5,9 @@
   <title>Adelente</title>
 </head>
 <body>
+    <script src="https://s3.samf.me/adelante-custom.js"></script>
     <!-- offline resources -->
+    <script src="js/base_data.js"></script>
     <script src="js/showdown.min.js"></script>
     <script src="js/vue.js"></script>
     <script src="js/zircle.js"></script>
@@ -30,10 +32,15 @@
         <h3>Téléchargement</h3>
         <p id="myProgressText"></p>
         <progress id="myProgress" value="0" max="100"></progress>
-      </div>      
+      </div>
     </div>
     <div id="br-icon" onclick="onButtonClicked()"></div>
     <script src="cordova.js"></script>
     <script src="js/index.js"></script>
+    <script>
+		$(function() {
+			window.JQUERY = $;
+		});
+    </script>
 </body>
 </html>

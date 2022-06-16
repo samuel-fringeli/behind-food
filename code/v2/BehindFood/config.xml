@@ -18,10 +18,14 @@
     <platform name="android">
         <preference name="orientation" value="landscape" />
         <preference name="SplashShowOnlyFirstTime" value="false" />
+        <preference name="AllowUntrustedCerts"  value="true" />
+        <preference name="InterceptRemoteRequests" value="all" />
+        <preference name="allowFileAccessFromFileURLs" value="true" />
+        <preference name="allowUniversalAccessFromFileURLs" value="true" />
         <allow-intent href="market:*" />
         <allow-intent href="http://*/*" />
         <allow-intent href="https://*/*" />
-        
+
         <resource-file src="res/values/colors.xml" target="/app/src/main/res/values/colors.xml" />
         <icon background="@color/background" density="mdpi" foreground="res/icon/android/mdpi.png" />
         <icon background="@color/background" density="hdpi" foreground="res/icon/android/hdpi.png" />
@@ -32,7 +36,11 @@
     <platform name="ios">
         <preference name="orientation" value="landscape" />
         <preference name="SplashShowOnlyFirstTime" value="false" />
-        
+        <preference name="AllowUntrustedCerts"  value="true" />
+        <preference name="InterceptRemoteRequests" value="all" />
+        <preference name="allowFileAccessFromFileURLs" value="true" />
+        <preference name="allowUniversalAccessFromFileURLs" value="true" />
+
         <allow-intent href="itms:*" />
         <allow-intent href="itms-apps:*" />
         <allow-intent href="http://*/*" />

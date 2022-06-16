@@ -19,7 +19,9 @@
 
 document.addEventListener('deviceready', onDeviceReady, false);
 document.addEventListener('offline', onOffline, false);
-document.addEventListener('online', onOnline, false);    
+document.addEventListener('online', onOnline, false);
+
+window.ALL_FILES_DOWNLOADED = false;
 
 let rootURL = 'cdvfile://localhost/persistent/';
 let serverURL = 'https://adelente-admin.samf.me';
@@ -48,22 +50,29 @@ function getContent(data) {
     if (data.media !== null) {
         var url = '';
 
-        if(devicePlatform === 'android'){
+        if (devicePlatform === 'android') {
             url = rootURL+data.media.hash+data.media.ext;
-        }else{
+        } else{
             url = localhost+data.media.hash+data.media.ext;
-        } 
+        }
 
         if (data.media.mime.includes('image')) {
+			if (!window.ALL_FILES_DOWNLOADED) {
+				url = 'adelante.png';
+			}
             return `<div style="padding: 20px;" @click="$event.target.ownerDocument.getElementById('myModal').style.display = 'block'; $event.target.ownerDocument.getElementById('modal-content-div').innerHTML='<img src=${url}>'"><img style="max-width: 285px; max-height: 285px;" src="${url}"></div>`;
         }
         if (data.media.mime.includes('video')) {
-            if (devicePlatform === 'android'){                
+            if (devicePlatform === 'android'){
                 return `<div height="350" width="350" onClick="(function(){
                     VideoPlayer.play('${url}',{volume:1.0, scalingMode: VideoPlayer.SCALING_MODE.SCALE_TO_FIT});
                     return false;
                     })();return false;"><video height="250" width="250"></video></div>`;
             }else{
+				if (!window.ALL_FILES_DOWNLOADED) {
+					url = 'adelante.png';
+					return `<div style="padding: 20px;" @click="$event.target.ownerDocument.getElementById('myModal').style.display = 'block'; $event.target.ownerDocument.getElementById('modal-content-div').innerHTML='<img src=${url}>'"><img style="max-width: 285px; max-height: 285px;" src="${url}"></div>`;
+				}
                 return `<video height="280" width="280" src="${url}" controls></video>`;
             }
         }
@@ -98,7 +107,7 @@ function recursiveAdd(responseText) {
 }
 
 function flatten(initialData) {
-    // Fonction originale de l'application web pour aplatir les éléments ajoutés récursivement. 
+    // Fonction originale de l'application web pour aplatir les éléments ajoutés récursivement.
     let resultData = [];
     function flatten(data) {
         resultData.push(data)
@@ -117,10 +126,10 @@ function flatten(initialData) {
 
 function downloadFile(url){
     // Fonction de téléchargement pour un fichier dont l'URL est donné, retourne une promesse jQuery. Peu importe si le nom du
-    // fichier passé en paramètre existe déjà sur le disque, cela écrasera le fichier existant grâce 
+    // fichier passé en paramètre existe déjà sur le disque, cela écrasera le fichier existant grâce
     // aux paramètres {create:true,exclusive:false} du FileSystem.
 
-    // Le plugin FileTransfer est déprécié, mais toujours fonctionnel, et gère toujours très bien les gros fichiers 
+    // Le plugin FileTransfer est déprécié, mais toujours fonctionnel, et gère toujours très bien les gros fichiers
     // et évite les problèmes de CORS.
     var promise = new $.Deferred();
     window.requestFileSystem(PERSISTENT, 0, function(fs){
@@ -139,7 +148,7 @@ function downloadFile(url){
                 function(entry){
                     console.log("File downloaded : " + localURL);
                     promise.resolve();
-                }, 
+                },
                 function(err){
                     console.log(err);
                     downloadFailed = true;
@@ -201,7 +210,7 @@ function prepareForDownloads(filesArray, fromUpdate){
 }
 
 function checkIfFileExists(url){
-    // Fonction qui permet de contrôler si un fichier existe dans le FileSystem à partir de son URL, retourne une promesse JQuery. 
+    // Fonction qui permet de contrôler si un fichier existe dans le FileSystem à partir de son URL, retourne une promesse JQuery.
     var promise = new $.Deferred();
     var fileName = url.substring(url.lastIndexOf("/") + 1);
     window.requestFileSystem(PERSISTENT, 0, function(fs){
@@ -229,15 +238,17 @@ function checkIfAllFilesExist(filesArray){
     return current;
 }
 
-function prepareTocheckIfAllFilesExist(filesArray){
+function prepareTocheckIfAllFilesExist(filesArray, callback){
     // Fonction qui permet de lancer la série de promesses pour un tableau d'URLs.
     // Si une promesse est rompue, cela va être catché et il est donc intéressant d'informer l'utilisateur qu'il manque
     // un ou plusieurs fichiers et qu'il serait nécessaire de mettre à jour l'application.
     filesToDownload = [];
-    filesArraySize = 0; 
+    filesArraySize = 0;
     SpinnerPlugin.activityStart("Contrôle du contenu local en cours...");
     checkIfAllFilesExist(filesArray).then(function(){
         SpinnerPlugin.activityStop();
+		window.ALL_FILES_DOWNLOADED = true;
+		callback();
     }).catch(function(e){
         // Un fichier n'a pas été trouvé
         SpinnerPlugin.activityStop();
@@ -248,6 +259,7 @@ function prepareTocheckIfAllFilesExist(filesArray){
                 navigator.notification.alert("Certains fichiers de contenu sont manquants. Afin de pouvoir profiter au maximum de l'application, veuillez mettre à jour l'application pour télécharger les fichiers manquants.", null, "Contenu manquant");
             }
         }
+		callback();
     })
 }
 
@@ -322,7 +334,7 @@ function initApp(flattenData){
                         <div style="font-size: ${fontSize}px; padding:5px;">${item.enfants[i].lien}</div>
                     </z-spot>`;
                 }
-                template = `<z-view>${getContent(item)}${zspots}</z-view>`;  
+                template = `<z-view>${getContent(item)}${zspots}</z-view>`;
             }else{
                 let zspots = '';
                 for (let i = 0; i < item.enfants.length; i++) {
@@ -334,14 +346,14 @@ function initApp(flattenData){
                         fontSize = 30 - item.enfants[i].lien.split(' ').length;
                     }else{
                         fontSize = 20 - item.enfants[i].lien.split(' ').length;
-                    }                        
+                    }
                     zspots += `<z-spot slot="extension" :angle="${i * 35}" to-view="view_${item.enfants[i].id}">
                         <div style="font-size: ${fontSize}px; word-wrap: break-word; -webkit-hyphens: auto; -moz-hyphens: auto; -ms-hyphens: auto;">${item.enfants[i].lien}</div>
                     </z-spot>`;
                 }
-                template = `<z-view>${getContent(item)}${zspots}</z-view>`;  
+                template = `<z-view>${getContent(item)}${zspots}</z-view>`;
             }
-             
+
         }
         return { viewId, template };
     });
@@ -361,33 +373,21 @@ function initApp(flattenData){
     });
 }
 
-function onOKpressed(){
+function createJsonFile(callback){
     // OK pressé pour première utilisation avec connexion.
     // Donc télécharger le JSON, télécharger tous les fichiers, contrôler si tous les fichiers ont bien été téléchargés, initialiser l'app et enregistrer cachedJSON.json.
     // Également enregistrer dans la variable globale cachedJsonDatas pour une éventuelle mise à jour demandée par l'utilisateur.
-    window.requestFileSystem(PERSISTENT, 0, function(fs){
-       var xhr = new XMLHttpRequest();
-       xhr.open("GET", "https://adelente-admin.samf.me/zircle-elements?_limit=20000");
-       xhr.onload = function(){
-        if (this.status === 200) {
-            var fileData = this.response;
-            fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
-                fileEntry.createWriter(function(fileWriter){
-                    fileWriter.onwriteend = function(){
-                        cachedJsonDatas = extractFilesAndFlatten(fileData);
-                        filesArraySize = cachedJsonDatas.filesArray.length;
-                        prepareForDownloads(cachedJsonDatas.filesArray, false);
-                        initApp(cachedJsonDatas.flattenData); 
-                    };
-                    fileWriter.onerror = function(e){
-                        navigator.notification.alert(e, null, 'fileWriter error');
-                    };
-                    fileWriter.write(fileData);
-                });
-            }, onErrorCreateFile);
-        }
-       };
-       xhr.send(); 
+	window.requestFileSystem(PERSISTENT, 0, function(fs){
+		let fileData = window.BASE_DATA;
+		fs.root.getFile("cachedJSON.json", { create : true, exclusive : false }, function(fileEntry){
+			fileEntry.createWriter(function(fileWriter){
+				fileWriter.onwriteend = callback;
+				fileWriter.onerror = function(e){
+					navigator.notification.alert(e, null, 'fileWriter error');
+				};
+				fileWriter.write(fileData);
+			});
+		}, onErrorCreateFile);
     }, onErrorLoadFs);
 }
 
@@ -402,7 +402,7 @@ function downloadJsonAndCompare(){
        xhr.onload = function(){
         if (this.status === 200) {
             var newJson = this.response;
-            
+
             let newJsonDatas = extractFilesAndFlatten(newJson);
             let filesToDownloadOnline = [];
 
@@ -463,7 +463,7 @@ function downloadJsonAndCompare(){
             }, onErrorCreateFile);
         }
        };
-       xhr.send(); 
+       xhr.send();
     }, onErrorLoadFs);
 }
 
@@ -513,11 +513,11 @@ function onDeviceReady() {
     converter = new showdown.Converter();
 
     // Pour iOS, les WkWebViews empêchent l'utilisation des URLs locaux (cvdfile:// et file:///).
-    // Afin d'éviter d'utiliser un reader pour chaque fichier à afficher, on peut démarrer un serveur local privé 
-    // au cadre de l'application qui remplacera les URLs locaux par des URLs HTTP. Ainsi, on va pouvoir accéder aux fichiers locaux 
-    // avec une adresse accéptée par les WkWebViews dans les attributs src des tags image et video. 
+    // Afin d'éviter d'utiliser un reader pour chaque fichier à afficher, on peut démarrer un serveur local privé
+    // au cadre de l'application qui remplacera les URLs locaux par des URLs HTTP. Ainsi, on va pouvoir accéder aux fichiers locaux
+    // avec une adresse accéptée par les WkWebViews dans les attributs src des tags image et video.
     // ----------------------------------------------------------------------------------------------------------------------------
-    // "file:///var/mobile/Applications/<UUID>/Documents/XXX.png" (fs.root et cordova.file.documentsDirectory iOS) est remplacé 
+    // "file:///var/mobile/Applications/<UUID>/Documents/XXX.png" (fs.root et cordova.file.documentsDirectory iOS) est remplacé
     // par "http://127.0.0.1:8080/XXX.png", types de liens utilisables dans les attributs src.
     if(devicePlatform === 'ios'){
         cordova.plugins.CorHttpd.startServer({
@@ -529,40 +529,39 @@ function onDeviceReady() {
         });
     }
 
+	function onFileEntrySuccess(fileEntry){
+		fileEntry.file(function (file){
+			var reader = new FileReader();
+			reader.onloadend = function(event){
+				// Un fichier cachedJSON existe dans les fichiers locaux. Directement générer cachedJsonDatas.
+				cachedJsonDatas = extractFilesAndFlatten(event.target.result);
+				if (navigator.connection.type !== 'none') {
+					// Connexion détectée, contrôler si tous les fichiers demandés par ce JSON sont disponibles.
+					prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray, function() {
+						initApp(cachedJsonDatas.flattenData);
+					});
+				}else{
+					// Connexion non-détectée. Contrôle de contenu et lancement de l'application. Cacher le bouton download.
+					document.getElementById("br-icon").style.display = "none";
+					prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray, function() {
+						initApp(cachedJsonDatas.flattenData);
+					});
+				}
+			}
+			reader.readAsText(file);
+		});
+	}
+
     // Contrôler si cachedJSON.json existe, si oui, déjà mettre le résultat dans une variable globale pour une utilisation future.
     window.requestFileSystem(PERSISTENT, 0, function(fs){
-        fs.root.getFile("cachedJSON.json", {create : false}, function(fileEntry){
-            fileEntry.file(function (file){
-                var reader = new FileReader();
-                reader.onloadend = function(event){
-                    // Un fichier cachedJSON existe dans les fichiers locaux. Directement générer cachedJsonDatas.
-                    cachedJsonDatas = extractFilesAndFlatten(event.target.result);
-                    if (navigator.connection.type !== 'none') {
-                        // Connexion détectée, contrôler si tous les fichiers demandés par ce JSON sont disponibles.
-                        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
-                        // Dans tous les cas l'application est lancée. Dans le cas où un fichier manquerait,
-                        // l'application n'affichera qu'une icone de fichier vide et un message d'alerte préviendra l'utilisateur
-                        // qu'il serait bon de mettre à jour son application.
-                        initApp(cachedJsonDatas.flattenData);
-                    }else{
-                        // Connexion non-détectée. Contrôle de contenu et lancement de l'application. Cacher le bouton download.
-                        document.getElementById("br-icon").style.display = "none";
-                        prepareTocheckIfAllFilesExist(cachedJsonDatas.filesArray);
-                        initApp(cachedJsonDatas.flattenData);
-                        
-                    }
-                }
-                reader.readAsText(file);
-            });
-        }, function(){
-            // Pas de fichier cachedJSON dans les fichiers.
-            if (navigator.connection.type !== 'none') {
-                // Connexion détectée, téléchargement de tous les fichiers puis lancement de l'application.
-                navigator.notification.alert("Première utilisation détéctée. L'initialisation de l'application prendra quelques minutes.", onOKpressed, "Première utilisation");
-            }else{
-                // Connexion non-détectée. Impossible d'installer l'app.
-                navigator.notification.alert("Erreur : première utilisation détéctée. Veuillez trouver une connexion à internet pour utiliser l'application pour la première fois.", onConfirmExit, "Pas de connexion internet");
-            }
-        });
+        fs.root.getFile("cachedJSON.json", {create : false}, onFileEntrySuccess, function() {
+			createJsonFile(function() {
+				window.requestFileSystem(PERSISTENT, 0, function(fs){
+					fs.root.getFile("cachedJSON.json", {create : false}, onFileEntrySuccess, function() {
+						navigator.notification.alert("Erreur : fichier cachedJSON.json non trouvé.");
+					});
+				}, onErrorLoadFs);
+			})
+		});
     }, onErrorLoadFs);
 }
