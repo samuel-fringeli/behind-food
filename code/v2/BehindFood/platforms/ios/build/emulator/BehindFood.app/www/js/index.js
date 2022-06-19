@@ -489,7 +489,17 @@ function onConfirmExit(){
 
 function onButtonClicked(){
     // Fonction qui gère le bouton de mise à jour.
-    navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes.", onConfirmUpdate, 'Mise à jour', ['OUI','NON']);
+	SpinnerPlugin.activityStart("Chargement des informations de mise à jour...");
+	let xhr = new XMLHttpRequest();
+	xhr.addEventListener("readystatechange", function() {
+		if (this.readyState === 4) {
+			let downloadSize = this.responseText;
+			SpinnerPlugin.activityStop();
+			navigator.notification.confirm("Voulez-vous mettre à jour le contenu de l'application ? Le processus peut prendre quelques minutes et téléchargera " + downloadSize +  " de données.", onConfirmUpdate, 'Mise à jour', ['OUI','NON']);
+		}
+	});
+	xhr.open("GET", "https://s3.samf.me/adelante_download_size.txt");
+	xhr.send();
 }
 
 function onOffline(){
