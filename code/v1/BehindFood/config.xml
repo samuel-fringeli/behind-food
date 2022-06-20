@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="io.cordova.behindfood" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="me.samf.behindfood" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>BehindFood</name>
     <description>
         Behind food is a mobile application used in an exhibition on sustainable development. It allows visitors to explore the hidden sides of different everyday foods through a journey of various themes related to these foods.
@@ -18,7 +18,7 @@
     <platform name="android">
         <preference name="orientation" value="landscape" />
         <allow-intent href="market:*" />
-        
+
         <resource-file src="res/values/colors.xml" target="/app/src/main/res/values/colors.xml" />
         <icon background="@color/background" density="mdpi" foreground="res/icon/android/mdpi.png" />
         <icon background="@color/background" density="hdpi" foreground="res/icon/android/hdpi.png" />

@@ -43,28 +43,28 @@
   },
   "installed_plugins": {
     "cordova-plugin-whitelist": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "cordova-plugin-network-information": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "cordova-plugin-file": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "cordova-plugin-file-transfer": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "cordova-plugin-httpd": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "cordova-plugin-spinner": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "cordova-plugin-dialogs": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     },
     "@globules-io/cordova-plugin-ios-xhr": {
-      "PACKAGE_NAME": "io.cordova.behindfood"
+      "PACKAGE_NAME": "me.samf.behindfood"
     }
   },
   "dependent_plugins": {},
